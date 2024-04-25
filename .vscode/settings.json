@@ -1,0 +1,11 @@
+{
+    "C_Cpp.errorSquiggles": "disabled",
+    "files.associations": {
+        "stdlib.h": "c",
+        "cjson.h": "c",
+        "strutil.h": "c",
+        "ini.h": "c",
+        "log.h": "c",
+        "cfg.h": "c"
+    }
+}
