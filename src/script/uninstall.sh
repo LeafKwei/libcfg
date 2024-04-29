@@ -9,7 +9,7 @@ _REALNAME=libcfg.so.${_VERSION}
 _SONAME=libcfg.so.1
 _LINKNAME=libcfg.so
 _CONFNAME=libcfg.so.conf
-_OBJS='cfg.o ini.o ini_plugin.o'
+_OBJS='cfg.o ini.o'
 
 rm -rf ${_PATH_USRLIB}
 rm -f ${_PATH_LD}/${_CONFNAME}

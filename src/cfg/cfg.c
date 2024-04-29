@@ -5,7 +5,9 @@ const char* cfg_errstr[] =
     "Success",
     "Out of memery",
     "NULL pointer",
-    "Out of bounds"
+    "Out of bounds",
+    "Bad text or format",
+    "Bad option"
 };
 
 const char* cfg_strerror(cfg_errno errno)
