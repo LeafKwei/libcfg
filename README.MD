@@ -14,16 +14,22 @@ cfg/ini模块提供了对*.ini文件的解析功能，该模块以行为单位�
 
 由于使用了缓冲区，cfg/ini不支持解析单行超过1023个字符(ASCII编码，包括注释和换行符)的文本，这个限制可以通过修改源码中的include/ini.h::INI_LIMIT_LINE来扩展。
 
+### 安装
+
+使用`export PATH_LIBCFG=/opt/lib/libcfg`添加环境变量`PATH_LIBCFG`，指定安装路径，其中`/opt/lib/libcfg`可以指定为其他路径。
+
+进入libcfg，执行`make clean;make`生成静态和动态库文件，在编译完成后，使用`make install`安装库文件到`/opt/lib`目录，在安装的同时会自动调用ldconfig对动态库文件进行配置和so-name生成。类似的，执行`make uninstall`可以卸载libcfg库。
+
 ### 示例
 
-以下方的test.ini文件为例，我们将以此文件为例介绍cfg/ini功能。在其中，`[USER]`及其后的内容被称为**section**，`USER`被称为section的**name**，`userName = admin`被称为**pair**，`userName`被称为pair的**key**，而`admin`被称为pair的**value**。
+以下方的test.ini文件为例，我们将以此文件为例介绍cfg/ini功能。在其中，`[USER]`，`[PROPERTIES]`及其后的内容被称为**section**，`USER`被称为section的**name**，`userName = admin`被称为**pair**，`userName`被称为pair的**key**，而`admin`被称为pair的**value**。
 
 ```
 [USER]
 userName = admin  ;this is comment
 userLevel = 0
 
-[Properties]
+[PROPERTIES]
 time = 100
 maxCount = 8
 ```
@@ -75,20 +81,18 @@ ini_flush(&iobj);
 
 由于cfg/ini是通过识别换行符`\n`来判断文本是否是完整的一行，而文件中的最后一行文本末尾可能不存在换行符，因此需要使用ini_flush函数来显式的追加换行符，该函数在当前版本等同于调用`ini_parse(&iobj, "\n")`。
 
-在成功完成解析后，使用ini_getValue函数来获取配置值:
+在成功完成解析后，使用ini_getValue函数来获取配置值，该函数在成功获取到value时返回1，反之返回0:
 
-```
+```c
 char* value;
-if((err = ini_getValue(&iobj, "USER", "userName", &value)))
-	fprintf(stderr, "failed to get value: %s, line: %d\n", 
-			cfg_strerror(err), 
-			ini_getProperty(&iobj, INI_PROP_LINECNT, &linecnt));
+if(ini_getValue(&iobj, "USER", "userName", &value))
+	printf("userName = %s", key);
 printf("userNmae = %s\n", value);
 ```
 
 最后，使用ini_end函数释放struct ini中的资源即可:
 
-```
+```c
 if((err = ini_end(&iobj)))
 	fprintf(stderr, "failed to end ini: %s, line: %d\n", 
 			cfg_strerror(err), 
