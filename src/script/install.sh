@@ -39,8 +39,8 @@ function movelib()
     cp libcfg.a $_PATH_USRLIB
     cp $_REALNAME $_PATH_USRLIB
     setld "$1"
-    cd $_PATH_USRLIB
-    ln -s "`pwd`"/$_SONAME $_LINKNAME
+    #cd $_PATH_USRLIB
+    #ln -s "`pwd`"/$_SONAME $_LINKNAME
 }
 
 #-----------main------------
