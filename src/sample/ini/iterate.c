@@ -38,6 +38,7 @@ int main(void)
 
 	
 	/* iterate */
+	printf("---------------iterate---------------\n");
 	char* name;
 	struct ini_sect* section;
 	struct ini_kv kv;
@@ -58,8 +59,23 @@ int main(void)
 		
 		printf("\n");
 	}
-	
 
+	/* iterate2 */
+	printf("---------------iterate2---------------\n");
+	if(ini_getSection(&iobj, "USER", &section))
+    {
+        if((err = ini_beginPairs(section)))
+            fprintf(stderr, "failed to begin pairs: %s, line: %d\n",
+                cfg_strerror(err),
+                ini_getProperty(&iobj, INI_PROP_LINECNT, &linecnt));
+
+        printf("[USER]\n");
+        while(ini_nextPair(section, &kv))
+        {
+            printf("%s = %s\n", kv.key, kv.val);
+        }
+    }
+	
 	if((err = ini_end(&iobj)))
         	fprintf(stderr, "failed to end ini: %s, line: %d\n",
                         cfg_strerror(err),

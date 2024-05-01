@@ -4,7 +4,7 @@
 
 **2024/04/30(1.0.0)**: libcfg是一个以提供对各类配置文件的解析功能为目的的C函数库，目前暂时仅支持对*.ini文件进行解析。
 
-
+**2024/05/01(1.1.0)**: 为cfg/ini模块添加了ini_getSection和ini_getValueFrom函数，现在可以根据name获取特定的section，并从该section中获取value或遍历其中的pair，示例代码参考src/sample/ini/iterate.c及readme.c。
 
 ## PART1---cfg/ini
 
@@ -18,7 +18,7 @@ cfg/ini模块提供了对*.ini文件的解析功能，该模块以行为单位�
 
 使用`export PATH_LIBCFG=/opt/lib/libcfg`添加环境变量`PATH_LIBCFG`，指定安装路径，其中`/opt/lib/libcfg`可以指定为其他路径。
 
-进入libcfg，执行`make clean;make`生成静态和动态库文件，在编译完成后，使用`make install`安装库文件到`/opt/lib`目录，在安装的同时会自动调用ldconfig对动态库文件进行配置和so-name生成。类似的，执行`make uninstall`可以卸载libcfg库。
+进入libcfg，执行`make clean;make`生成静态和动态库文件，在编译完成后，使用`make install`安装库文件到`/opt/lib/libcfg`目录，在安装的同时会自动调用ldconfig对动态库文件进行配置和so-name生成。类似的，执行`make uninstall`可以卸载libcfg库。
 
 ### 示例
 

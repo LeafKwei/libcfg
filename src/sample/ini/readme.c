@@ -42,9 +42,20 @@ int main(void)
 
 	ini_flush(&iobj);
 
+	/* readme */
+	printf("---------------readme---------------\n");
 	char* value;
 	if(ini_getValue(&iobj, "USER", "userName", &value))
-		printf("userNmae = %s\n", value);		
+		printf("userName = %s\n", value);		
+
+	/* getValueFrom */
+	printf("---------------getValueFrom---------------\n");
+	struct ini_sect* section;
+	if(ini_getSection(&iobj, "USER", &section))
+	{
+		if(ini_getValueFrom(section, "userLevel", &value))
+			printf("userLevel = %s\n", value);
+	}
 
 	if((err = ini_end(&iobj)))
         	fprintf(stderr, "failed to end ini: %s, line: %d\n",

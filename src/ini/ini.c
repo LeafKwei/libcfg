@@ -491,29 +491,21 @@ CFG_BOOL ini_getValue(struct ini* iptr, const char* name, const char* key, char*
     if(iptr == NULL || name == NULL || key == NULL) return CFG_BOOL_FLASE;
 
     struct ini_pair* target = NULL;
-    struct ini_sect* head = iptr -> sections;
+    struct ini_sect* sect;
     
-    if(!filter_bitmap(iptr -> bitmap, iptr -> mapsize, name))
-        goto no_value;
-
-    while(head != NULL)
+    if(ini_getSection(iptr, name, &sect))
     {
-        if(strcmp(head -> name, name) == 0)
+        if(find_pair(key, sect, &target))
         {
-            if(find_pair(key, head, &target))
-            {
-                if(r_value != NULL)
-                    *r_value = target -> val;
-                return CFG_BOOL_TRUE;
-            }
-            goto no_value;
+            if(r_value != NULL)
+                *r_value = target -> val;
+            return CFG_BOOL_TRUE;
         }
-
-        head = head -> nextsect;
     }
 
 no_value:
-    *r_value = NULL;
+    if(r_value != NULL)
+        *r_value = NULL;
     return CFG_BOOL_FLASE;
 }
 
@@ -599,4 +591,48 @@ CFG_ERRNO ini_getProperty(struct ini* iptr, ini_propname name, void* mem)
         default:
             return CFG_ERR_BADOPT;
     }
+}
+
+CFG_BOOL ini_getSection(struct ini* iptr, const char* name, struct ini_sect** r_sect)
+{
+    if(iptr == NULL || name == NULL) return CFG_BOOL_FLASE;
+
+    struct ini_sect* head = iptr -> sections;
+    
+    if(!filter_bitmap(iptr -> bitmap, iptr -> mapsize, name))
+        goto no_sect;
+
+    while(head != NULL)
+    {
+        if(strcmp(head -> name, name) == 0)
+        {
+            if(r_sect != NULL)
+                *r_sect = head;
+            return CFG_BOOL_TRUE;
+        }
+
+        head = head -> nextsect;
+    }
+
+no_sect:
+    if(r_sect != NULL)
+        *r_sect = NULL;
+    return CFG_BOOL_FLASE;
+}
+
+CFG_BOOL ini_getValueFrom(struct ini_sect* sect, const char* key, char** r_value)
+{
+    if(sect == NULL || key == NULL) return CFG_BOOL_FLASE;
+
+    struct ini_pair* target;
+    if(find_pair(key, sect, &target))
+    {
+        if(r_value != NULL)
+            *r_value = target -> val;
+            return CFG_BOOL_TRUE;
+    }
+
+    if(r_value != NULL)
+        *r_value = NULL;
+    return CFG_BOOL_FLASE;
 }

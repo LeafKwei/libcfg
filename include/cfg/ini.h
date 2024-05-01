@@ -84,7 +84,7 @@ CFG_ERRNO ini_flush(struct ini* iptr);
  * @param name section的名称
  * @param key section下的pair的名称
  * @param r_value 保存value指针的指针，如果不为NULL，则对应的pair中的value指针将保存到其中
- * @return 当存在对应的value时，返回1，否则返回0(此时*value将会被设置为NULL)
+ * @return 当存在对应的value时，返回1，否则返回0(此时*r_value将会被设置为NULL)
  */
 CFG_BOOL ini_getValue(struct ini* iptr, const char* name, const char* key, char** r_value);
 
@@ -140,6 +140,24 @@ CFG_BOOL ini_nextPair(struct ini_sect* sect, struct ini_kv* kv);
  * @return 成功时返回0，失败时返回错误码
  */
 CFG_ERRNO ini_getProperty(struct ini* iptr, ini_propname name, void* mem);
+
+/**
+ * @brief 获取指定名称的section
+ * @param iptr ini对象
+ * @param name section名称
+ * @param r_sect 保存section指针的指针，如果不为NULL，则将section的指针保存到其中
+ * @return  当存在对应的section时，返回1，否则返回0(此时*r_sect将会被设置为NULL)
+ */
+CFG_BOOL ini_getSection(struct ini* iptr, const char* name, struct ini_sect** r_sect);
+
+/**
+ * @brief 从指定的section中获取key所对应的value
+ * @param sect section对象
+ * @param key section下的pair的名称
+ * @param r_value 保存value指针的指针，如果不为NULL，则对应的pair中的value指针将保存到其中
+ * @return 当存在对应的value时，返回1，否则返回0(此时*r_value将会被设置为NULL)
+ */
+CFG_BOOL ini_getValueFrom(struct ini_sect* sect, const char* key, char** r_value);
 
 //--------------expands end--------------
 
