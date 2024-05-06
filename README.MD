@@ -6,6 +6,8 @@
 
 **2024/05/01(1.1.0)**: 为cfg/ini模块添加了ini_getSection和ini_getValueFrom函数，现在可以根据name获取特定的section，并从该section中获取value或遍历其中的pair，示例代码参考src/sample/ini/iterate.c及readme.c。
 
+**2024/05/06(1.1.1)**: 修复了src/samplee/ini下的示例程序中的fread读取长度问题，在版本中，缓冲区分配为65535，而fread读取长度也为65535，由于ini_parse需要借助'\0'判断是否到达字符串末尾，因此存在缓冲区溢出的风险。
+
 ## PART1---cfg/ini
 
 ### 简介

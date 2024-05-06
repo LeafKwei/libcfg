@@ -33,7 +33,7 @@ int main(void)
 	while(!feof(stream))
 	{
     		memset(mem, 0, 65535);
-    		fread(mem, 65535, 1, stream);
+    		fread(mem, 65534, 1, stream);
     		if((err = ini_parse(&iobj, mem)))
         		fprintf(stderr, "failed to parse test.ini: %s, line: %d\n",
                         	cfg_strerror(err),
