@@ -382,7 +382,7 @@ static CFG_ERRNO handle_sect(struct ini* iptr)
     /* 添加section，同时设置bit */
     put_sect(iptr, sectptr);
     if(ENABLE_BITMAP(iptr))
-        (iptr -> bitmap, iptr -> mapsize, sectptr -> name);
+        set_bit(iptr -> bitmap, iptr -> mapsize, sectptr -> name);
     return CFG_ERR_NONE;
 
 err_oom_sect:
