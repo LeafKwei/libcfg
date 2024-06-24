@@ -7,7 +7,7 @@
  # CFG模块定义了库文件版本，并提供了通用的错误码和错误信息获取函数，错误信息定义在了cfg.c中
 */
 
-#define CFG_VERSION "1.1.1"
+#define CFG_VERSION "1.1.2"
 #define CFG_ERRNO cfg_errno
 #define CFG_BOOL cfg_bool
 

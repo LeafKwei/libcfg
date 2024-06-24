@@ -1,7 +1,7 @@
 #!/bin/bash
 
 _DW=$1
-_VERSION=1.1.1
+_VERSION=1.1.2
 _PATH_ROOT=$2
 _PATH_USRLIB=${PATH_LIBCFG}
 _PATH_LD=/etc/ld.so.conf.d

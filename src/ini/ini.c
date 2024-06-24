@@ -9,6 +9,7 @@
 #define BITWISE (8)
 
 #define NeverNULL(ptr) assert(ptr != NULL)
+#define ENABLE_BITMAP(iptr) ((iptr) -> bitmap != NULL)
 #define NOP ((void*) NULL)
 #define CEILBYTE(size) (((size) / BITWISE) + ((size) % BITWISE != 0 ? 1 : 0))
 
@@ -380,7 +381,8 @@ static CFG_ERRNO handle_sect(struct ini* iptr)
     
     /* 添加section，同时设置bit */
     put_sect(iptr, sectptr);
-    set_bit(iptr -> bitmap, iptr -> mapsize, sectptr -> name);
+    if(ENABLE_BITMAP(iptr))
+        (iptr -> bitmap, iptr -> mapsize, sectptr -> name);
     return CFG_ERR_NONE;
 
 err_oom_sect:
@@ -599,7 +601,7 @@ CFG_BOOL ini_getSection(struct ini* iptr, const char* name, struct ini_sect** r_
 
     struct ini_sect* head = iptr -> sections;
     
-    if(!filter_bitmap(iptr -> bitmap, iptr -> mapsize, name))
+    if(ENABLE_BITMAP(iptr) && !filter_bitmap(iptr -> bitmap, iptr -> mapsize, name))
         goto no_sect;
 
     while(head != NULL)
