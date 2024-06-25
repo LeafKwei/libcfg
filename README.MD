@@ -10,6 +10,8 @@
 
 **2024/06/24(1.1.2)**: 修复了在禁用bitmap的情况下，仍然会对bitmap进行判断的问题。
 
+**2024/06/24(1.1.3)**: 在struct ini中添加了section的缓存，现在在连续对同一个name调用ini_getValue的情况下，可以更快的获取到value。
+
 ## PART1---cfg/ini
 
 ### 简介

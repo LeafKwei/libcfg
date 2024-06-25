@@ -493,16 +493,21 @@ CFG_BOOL ini_getValue(struct ini* iptr, const char* name, const char* key, char*
     if(iptr == NULL || name == NULL || key == NULL) return CFG_BOOL_FLASE;
 
     struct ini_pair* target = NULL;
-    struct ini_sect* sect;
-    
-    if(ini_getSection(iptr, name, &sect))
+    struct ini_sect* sect = iptr -> sectcache;
+
+    if((sect == NULL) || (strcmp(sect -> name, name)))
     {
-        if(find_pair(key, sect, &target))
-        {
-            if(r_value != NULL)
-                *r_value = target -> val;
-            return CFG_BOOL_TRUE;
-        }
+        if(!ini_getSection(iptr, name, &sect))
+            goto no_value;
+    }
+    
+    iptr -> sectcache = sect;
+    
+    if(find_pair(key, sect, &target))
+    {
+        if(r_value != NULL)
+            *r_value = target -> val;
+        return CFG_BOOL_TRUE;
     }
 
 no_value:
