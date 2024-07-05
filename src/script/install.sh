@@ -1,7 +1,7 @@
 #!/bin/bash
 
 _DW=$1
-_VERSION=1.1.3
+_VERSION=1.1.4
 _PATH_ROOT=$2
 _PATH_USRLIB=${PATH_LIBCFG}
 _PATH_LD=/etc/ld.so.conf.d
@@ -52,8 +52,8 @@ function movelib()
     cp libcfg.a $_PATH_USRLIB
     cp $_REALNAME $_PATH_USRLIB
     setld "$1"
-    #cd $_PATH_USRLIB
-    #ln -s "`pwd`"/$_SONAME $_LINKNAME
+    cd $_PATH_USRLIB
+    ln -s "`pwd`"/$_REALNAME $_LINKNAME
 }
 
 function moveinc()

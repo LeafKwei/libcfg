@@ -12,6 +12,8 @@
 
 **2024/06/24(1.1.3)**: 在struct ini中添加了section的缓存，现在在连续对同一个name调用ini_getValue的情况下，可以更快的获取到value。
 
+**2024/07/05(1.1.4)**: 修复了安装脚本中的某些错误，启用了install.sh中生成软链接libcfg.so的功能
+
 ## PART1---cfg/ini
 
 ### 简介
