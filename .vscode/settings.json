@@ -7,5 +7,6 @@
         "ini.h": "c",
         "log.h": "c",
         "cfg.h": "c"
-    }
+    },
+    "makefile.configureOnOpen": false
 }

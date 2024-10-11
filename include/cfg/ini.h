@@ -162,4 +162,69 @@ CFG_BOOL ini_getValueFrom(struct ini_sect* sect, const char* key, char** r_value
 
 //--------------expands end--------------
 
+//--------------ini write start--------------
+/**
+ * @brief 添加一个键值对到ini对象中，当name指定的section不存在时会新建section，当存在key对应的键值对时，覆盖已有的键值对
+ * @param iptr ini对象
+ * @param name section名称
+ * @param key 键
+ * @param value 值
+ * @return 成功时返回0，失败时返回错误码
+ */
+CFG_ERRNO ini_putPair(struct ini* iptr, const char* name, const char* key, const char* value);
+
+/**
+ * @brief 添加一个键值对到ini对象中，当name指定的section不存在或键值对已存在时不会添加
+ * @param iptr ini对象
+ * @param name section名称
+ * @param key 键
+ * @param value 值
+ * @return 成功时返回0，失败时返回错误码
+ */
+CFG_ERRNO ini_addPair(struct ini* iptr, const char* name, const char* key, const char* value);
+
+/**
+ * @brief 从ini对象中删除一个键值对
+ * @param iptr ini对象
+ * @param name section名称
+ * @param key 键
+ * @return 成功时返回0，失败时返回错误码
+ */
+CFG_ERRNO ini_rmvPair(struct ini* iptr, const char* name, const char* key);
+
+/**
+ * @brief 向ini对象中添加一个section
+ * @param iptr ini对象
+ * @param name section名称
+ * @return 成功时返回0，失败时返回错误码 
+ */
+CFG_ERRNO ini_addSection(struct ini* iptr, const char* name);
+
+/**
+ * @brief 清空一个section中的内容
+ * @param iptr ini对象
+ * @param name section名称
+ * @return 成功时返回0，失败时返回错误码 
+ */
+CFG_ERRNO ini_clrSection(struct ini* iptr, const char* name);
+
+/**
+ * @brief 从ini对象中删除一个section
+ * @param iptr ini对象
+ * @param name section名称
+ * @return 成功时返回0，失败时返回错误码 
+ */
+CFG_ERRNO ini_rmvSection(struct ini* iptr, const char* name);
+
+/**
+ * @brief 将ini对象中的内容转换为一个字符串
+ * @param iptr ini对象
+ * @param r_buf 保存字符串地址的指针，字符串将会保存在动态分配的内存中，这段内存应该由此函数的调用者释放
+ * @param commentor 用于生成注释的函数，可为每个section生成一个注释
+ * @return 成功时返回0，失败时返回错误码
+ */
+CFG_ERRNO ini_toString(struct ini* iptr, char** r_buf, char* (*commentor)(const char* name));
+
+//--------------ini write end--------------
+
 #endif

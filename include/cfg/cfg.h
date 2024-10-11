@@ -24,7 +24,8 @@ typedef enum cfg_errno
     CFG_ERR_NULLPTR,      //空指针
     CFG_ERR_OOB,          //超出范围
     CFG_ERR_BADTEXT,      //异常的文本格式
-    CFG_ERR_BADOPT        //异常的选项 
+    CFG_ERR_BADOPT,       //异常的选项 
+    CFG_ERR_CONFLICT      //存在冲突
 } cfg_errno;
 
 extern const char* cfg_strerror(cfg_errno errno);
