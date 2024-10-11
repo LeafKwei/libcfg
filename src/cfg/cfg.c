@@ -8,7 +8,8 @@ const char* cfg_errstr[] =
     "Out of bounds",
     "Bad text or format",
     "Bad option",
-    "Content conflict"
+    "Contents conflict",
+    "No such target"
 };
 
 const char* cfg_strerror(cfg_errno errno)

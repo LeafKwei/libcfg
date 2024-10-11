@@ -451,6 +451,35 @@ static CFG_BOOL find_pair(const char* key, struct ini_sect* head, struct ini_pai
     return CFG_BOOL_FLASE;
 }
 
+static CFG_ERRNO set_value(struct ini_sect* sect, const char* key, const char* value)
+{
+    NeverNULL(sect);
+    NeverNULL(key);
+    NeverNULL(value);
+
+    struct ini_pair* head = sect -> pairs;
+    while(head != NULL)
+    {
+        if(strcmp(head -> key, key) == 0)
+        {
+            char* memvalue = (char*) calloc(strlen(value) + 1, 1);
+            if(memvalue == NULL)
+            {
+                return CFG_ERR_OOM;
+            }
+
+            strcpy(memvalue, value);
+            free(head -> val);
+            head -> val = memvalue;
+            break;
+        }
+
+        head = head -> nextpair;
+    }
+
+    return CFG_ERR_NOTFOUND;
+}
+
 //--------------------interface--------------------
 CFG_ERRNO ini_start(struct ini* iptr, unsigned int mapsize)
 {
@@ -643,3 +672,88 @@ CFG_BOOL ini_getValueFrom(struct ini_sect* sect, const char* key, char** r_value
         *r_value = NULL;
     return CFG_BOOL_FLASE;
 }
+
+//--------------ini write start--------------
+CFG_ERRNO ini_putPair(struct ini* iptr, const char* name, const char* key, const char* value)
+{
+    if(iptr == NULL || name == NULL 
+        || key == NULL || value == NULL)
+    {
+        return CFG_ERR_NULLPTR;
+    }
+
+    struct ini_sect* newsect = NULL;
+    if(!ini_getSection(iptr, name, &newsect))
+    {
+        /* Create a new section if no section was found in ini, then add it to ini */
+        newsect = (ini_sect*) calloc(1, sizeof(struct ini_sect));
+        newsect -> pairs = NULL;
+        if(newsect == NULL)
+        {
+            return CFG_ERR_OOM;
+        }
+
+        put_sect(iptr, newsect);
+    }
+
+    /* If pair exists */
+    CFG_ERRNO err = set_value(newsect, key, value);
+    if(err = CFG_ERR_NONE) return CFG_ERR_NONE;
+    else if(err != CFG_ERR_NOTFOUND) return err;
+
+    /* Create a new pair and add it to the section */
+    struct ini_pair* newpair = (struct ini_pair*) calloc(1, sizeof(struct ini_pair));
+    char* memkey = (char*) calloc(strlen(key) + 1, 1);
+    char* memval = (char*) calloc(strlen(value) + 1, 1);
+
+    if(newpair == NULL)
+        return CFG_ERR_OOM;
+    if(memkey == NULL)
+        goto err_oom1;
+    if(memval == NULL)
+        goto err_oom2;
+
+    strcpy(memkey, key);
+    strcpy(memval, value);
+    newpair -> key = memkey;
+    newpair -> val = memval;
+
+    /* We use the function which using at parsing to add pair to the section */
+    struct ini_sect* backup = iptr -> sections -> prevsect;
+    iptr -> sections -> prevsect = newsect;
+    put_pair(iptr, newpair);
+    iptr -> sections -> prevsect = backup;
+
+    return CFG_ERR_NONE;
+
+err_oom2:
+    free(memkey);
+err_oom1:
+    free(newpair);
+    return CFG_ERR_OOM;
+}
+
+CFG_ERRNO ini_addPair(struct ini* iptr, const char* name, const char* key, const char* value)
+{
+    if(iptr == NULL || name == NULL 
+        || key == NULL || value == NULL)
+    {
+        return CFG_ERR_NULLPTR;
+    }
+
+    if(ini_getValue(iptr, name, key, NULL))
+        return CFG_ERR_CONFLICT;
+
+    return ini_putPair(iptr, name, key, value);
+
+}
+
+CFG_ERRNO ini_rmvPair(struct ini* iptr, const char* name, const char* key);
+
+CFG_ERRNO ini_addSection(struct ini* iptr, const char* name);
+
+CFG_ERRNO ini_clrSection(struct ini* iptr, const char* name);
+
+CFG_ERRNO ini_rmvSection(struct ini* iptr, const char* name);
+
+CFG_ERRNO ini_toString(struct ini* iptr, char** r_buf, char* (*commentor)(const char* name));
