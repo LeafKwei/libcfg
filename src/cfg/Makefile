@@ -1,7 +1,7 @@
 _CC=gcc
 _INCL=-I ../../include
 _LINK=
-_FLAG=
+_FLAG=-g
 _PIC=-fPIC
 
 # complie as static

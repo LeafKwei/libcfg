@@ -201,13 +201,12 @@ static void free_sect(struct ini_sect* sectptr)
     free(sectptr);
 }
 
-static void put_pair(struct ini* iptr, struct ini_pair* pairptr)
+static void put_pair(struct ini_sect* sectptr, struct ini_pair* pairptr)
 {
-    NeverNULL(iptr);
+    NeverNULL(sectptr);
     NeverNULL(pairptr);
-    NeverNULL(iptr -> sections -> prevsect);
-
-    struct ini_sect* sect_current = iptr -> sections -> prevsect;
+    
+    struct ini_sect* sect_current = sectptr;
     if(sect_current -> pairs == NULL)
     {
         pairptr -> prevpair = pairptr;
@@ -220,7 +219,7 @@ static void put_pair(struct ini* iptr, struct ini_pair* pairptr)
     pair_last -> nextpair = pairptr;
     pairptr -> prevpair = pair_last;
     pairptr -> nextpair = NULL;
-    sect_current -> pairs -> prevpair = pairptr;
+    sect_current -> pairs -> prevpair = pairptr;    
 }
 
 static CFG_ERRNO handle_pair(struct ini* iptr)
@@ -274,7 +273,7 @@ static CFG_ERRNO handle_pair(struct ini* iptr)
     if(pairptr == NULL) goto err_oom_pair;              //内存分配失败
     pairptr -> key = mem_key;
     pairptr -> val = mem_val;
-    put_pair(iptr, pairptr);
+    put_pair(iptr -> sections -> prevsect, pairptr);
     return CFG_ERR_NONE;
 
 err_oom_val:
@@ -337,7 +336,7 @@ static void put_sect(struct ini* iptr, struct ini_sect* sectptr)
         sectptr -> prevsect = sectptr;
         sectptr -> nextsect = NULL;
         iptr -> sections = sectptr;
-        return;
+        goto setbit;
     }
 
     struct ini_sect* sect_last = iptr -> sections -> prevsect;
@@ -345,6 +344,11 @@ static void put_sect(struct ini* iptr, struct ini_sect* sectptr)
     sectptr -> prevsect = sect_last;
     sectptr -> nextsect = NULL;
     iptr -> sections -> prevsect = sectptr;
+
+setbit:
+    /* 设置bit位 */
+    if(ENABLE_BITMAP(iptr))
+        set_bit(iptr -> bitmap, iptr -> mapsize, sectptr -> name);
 }
 
 static CFG_ERRNO handle_sect(struct ini* iptr)
@@ -379,10 +383,8 @@ static CFG_ERRNO handle_sect(struct ini* iptr)
     if(sectptr == NULL) goto err_oom_sect;
     sectptr -> name = mem_name;
     
-    /* 添加section，同时设置bit */
+    /* 添加section */
     put_sect(iptr, sectptr);
-    if(ENABLE_BITMAP(iptr))
-        set_bit(iptr -> bitmap, iptr -> mapsize, sectptr -> name);
     return CFG_ERR_NONE;
 
 err_oom_sect:
@@ -460,24 +462,106 @@ static CFG_ERRNO set_value(struct ini_sect* sect, const char* key, const char* v
     struct ini_pair* head = sect -> pairs;
     while(head != NULL)
     {
-        if(strcmp(head -> key, key) == 0)
+        if(strcmp(head -> key, key) != 0)
         {
-            char* memvalue = (char*) calloc(strlen(value) + 1, 1);
-            if(memvalue == NULL)
-            {
-                return CFG_ERR_OOM;
-            }
-
-            strcpy(memvalue, value);
-            free(head -> val);
-            head -> val = memvalue;
-            break;
+            head = head -> nextpair;
+            continue;
         }
 
-        head = head -> nextpair;
+        char* memvalue = (char*) calloc(strlen(value) + 1, 1);
+        if(memvalue == NULL)
+        {
+            return CFG_ERR_OOM;
+        }
+
+        strcpy(memvalue, value);
+        free(head -> val);
+        head -> val = memvalue;
+        return CFG_ERR_NONE;
     }
 
     return CFG_ERR_NOTFOUND;
+}
+
+static CFG_ERRNO resize(char** mem, unsigned int newsize)
+{
+    NeverNULL(mem);
+    NeverNULL(*mem);
+
+    char* oldmem = *mem;
+    char* newmem = (char*) calloc(newsize, 1);
+    if(newmem == NULL)
+        return CFG_ERR_OOM;
+
+    strcpy(newmem, oldmem);
+    free(oldmem);
+    *mem = newmem;
+
+    return CFG_ERR_NONE;
+}
+
+static CFG_ERRNO write_line(char** memstring, char* memline, unsigned int* nwrite, unsigned int* initsize)
+{
+    NeverNULL(memstring);
+    NeverNULL(memline);
+    NeverNULL(nwrite);
+
+    unsigned int len = strlen(memline);
+    unsigned int this_nwrite = *nwrite;
+    unsigned int this_initsize = *initsize;
+    unsigned int remain = this_initsize - this_nwrite - 1;
+    
+    /* Remain these code to warn me.
+    if(remain < len)
+    {
+        this_initsize <<= 1;
+        if(resize(&memstring, this_initsize))
+            return CFG_ERR_OOM;
+    }
+    */
+
+    while(remain <= len)
+    {
+        this_initsize <<= 1;
+        remain = this_initsize - this_nwrite - 1;
+    }
+
+    if(resize(memstring, this_initsize))
+            return CFG_ERR_OOM;
+    strncpy(*memstring + this_nwrite, memline, remain);
+
+    *nwrite += len;
+    *initsize = this_initsize;
+    return CFG_ERR_NONE;
+}
+
+static CFG_ERRNO newSection(struct ini* iptr, const char* name, struct ini_sect** r_sect)
+{
+    NeverNULL(iptr);
+    NeverNULL(name);
+
+    /* Create a new section if no section was found in ini, then add it to ini */
+    struct ini_sect* newsect;
+    newsect = (ini_sect*) calloc(1, sizeof(struct ini_sect));
+    newsect -> name = (char*) calloc(strlen(name) + 1, 1);
+    newsect -> pairs = NULL;
+    if(newsect == NULL)
+    {
+        return CFG_ERR_OOM;
+    }
+
+    if(newsect -> name == NULL)
+    {
+        free(newsect);
+        return CFG_ERR_OOM;
+    }
+
+    strcpy(newsect -> name, name);
+    put_sect(iptr, newsect);
+
+    if(r_sect != NULL)
+        *r_sect = newsect;
+    return CFG_ERR_NONE;
 }
 
 //--------------------interface--------------------
@@ -674,7 +758,61 @@ CFG_BOOL ini_getValueFrom(struct ini_sect* sect, const char* key, char** r_value
 }
 
 //--------------ini write start--------------
-CFG_ERRNO ini_putPair(struct ini* iptr, const char* name, const char* key, const char* value)
+CFG_ERRNO ini_newSection(struct ini* iptr, const char* name)
+{
+    if(iptr == NULL || name == NULL)
+        return CFG_ERR_NULLPTR;
+    return newSection(iptr, name, NULL);
+}
+
+CFG_ERRNO ini_clrSection(struct ini* iptr, const char* name)
+{
+    if(iptr == NULL || name == NULL)
+        return CFG_ERR_NULLPTR;
+
+    struct ini_sect* sect = NULL;
+    if(ini_getSection(iptr, name, &sect))
+        goto found_sect;
+
+    return CFG_ERR_NOTFOUND;
+
+found_sect:
+    struct ini_pair* pair = sect -> pairs;
+    while(pair != NULL)
+    {
+        struct ini_pair* tmp = pair -> nextpair;
+        free_pair(pair);
+        pair = tmp;
+    }
+
+    sect -> pairs = NULL;
+    return CFG_ERR_NONE;
+}
+
+CFG_ERRNO ini_rmvSection(struct ini* iptr, const char* name)
+{
+    if(iptr == NULL || name == NULL)
+        return CFG_ERR_NONE;
+
+    struct ini_sect* sect = NULL;
+    if(ini_getSection(iptr, name, &sect))
+        goto found_sect;
+
+    return CFG_ERR_NOTFOUND;
+
+found_sect:
+    if(sect == iptr -> sections)
+        iptr -> sections = sect -> nextsect;
+    if(sect -> prevsect != NULL)
+        sect -> prevsect -> nextsect = sect -> nextsect;
+    if(sect -> nextsect != NULL)
+        sect -> nextsect -> prevsect = sect -> prevsect;
+
+    free_sect(sect);
+    return CFG_ERR_NONE;
+}
+
+CFG_ERRNO ini_newPair(struct ini* iptr, const char* name, const char* key, const char* value)
 {
     if(iptr == NULL || name == NULL 
         || key == NULL || value == NULL)
@@ -682,24 +820,13 @@ CFG_ERRNO ini_putPair(struct ini* iptr, const char* name, const char* key, const
         return CFG_ERR_NULLPTR;
     }
 
+    /* Create a new section if no section in ini found*/
     struct ini_sect* newsect = NULL;
     if(!ini_getSection(iptr, name, &newsect))
     {
-        /* Create a new section if no section was found in ini, then add it to ini */
-        newsect = (ini_sect*) calloc(1, sizeof(struct ini_sect));
-        newsect -> pairs = NULL;
-        if(newsect == NULL)
-        {
-            return CFG_ERR_OOM;
-        }
-
-        put_sect(iptr, newsect);
+        CFG_ERRNO err = newSection(iptr, name, &newsect);
+        if(err) return err;
     }
-
-    /* If pair exists */
-    CFG_ERRNO err = set_value(newsect, key, value);
-    if(err = CFG_ERR_NONE) return CFG_ERR_NONE;
-    else if(err != CFG_ERR_NOTFOUND) return err;
 
     /* Create a new pair and add it to the section */
     struct ini_pair* newpair = (struct ini_pair*) calloc(1, sizeof(struct ini_pair));
@@ -718,12 +845,7 @@ CFG_ERRNO ini_putPair(struct ini* iptr, const char* name, const char* key, const
     newpair -> key = memkey;
     newpair -> val = memval;
 
-    /* We use the function which using at parsing to add pair to the section */
-    struct ini_sect* backup = iptr -> sections -> prevsect;
-    iptr -> sections -> prevsect = newsect;
-    put_pair(iptr, newpair);
-    iptr -> sections -> prevsect = backup;
-
+    put_pair(newsect, newpair);
     return CFG_ERR_NONE;
 
 err_oom2:
@@ -733,27 +855,109 @@ err_oom1:
     return CFG_ERR_OOM;
 }
 
-CFG_ERRNO ini_addPair(struct ini* iptr, const char* name, const char* key, const char* value)
+CFG_ERRNO ini_setValue(struct ini* iptr, const char* name, const char* key, const char* value)
 {
-    if(iptr == NULL || name == NULL 
-        || key == NULL || value == NULL)
-    {
+    if(iptr == NULL || name == NULL || key == NULL || value == NULL)
         return CFG_ERR_NULLPTR;
-    }
-
-    if(ini_getValue(iptr, name, key, NULL))
-        return CFG_ERR_CONFLICT;
-
-    return ini_putPair(iptr, name, key, value);
-
+    
+    struct ini_sect* sect = NULL;
+    if(!(ini_getSection(iptr, name, &sect)))
+        return CFG_ERR_NOTFOUND;
+    
+    return set_value(sect, key, value);
 }
 
-CFG_ERRNO ini_rmvPair(struct ini* iptr, const char* name, const char* key);
+CFG_ERRNO ini_rmvPair(struct ini* iptr, const char* name, const char* key)
+{
+    if(iptr == NULL || name == NULL || key == NULL)
+        return CFG_ERR_NULLPTR;
 
-CFG_ERRNO ini_addSection(struct ini* iptr, const char* name);
+    struct ini_sect* sect = iptr -> sections;
+    if(ini_getSection(iptr, name, &sect))
+        goto found_sect;
 
-CFG_ERRNO ini_clrSection(struct ini* iptr, const char* name);
+    return CFG_ERR_NOTFOUND;
 
-CFG_ERRNO ini_rmvSection(struct ini* iptr, const char* name);
+found_sect:
+    struct ini_pair* pair = sect -> pairs;
+    while(pair != NULL)
+    {
+        if(strcmp(pair -> key, key) != 0)
+        {
+            pair = pair -> nextpair;
+            continue;
+        }
 
-CFG_ERRNO ini_toString(struct ini* iptr, char** r_buf, char* (*commentor)(const char* name));
+        goto found_pair;
+    }
+
+    return CFG_ERR_NOTFOUND;
+
+found_pair:
+    if(pair == sect -> pairs)
+        sect -> pairs = pair -> nextpair;
+    if(pair -> prevpair != NULL)
+        pair -> prevpair -> nextpair = pair -> nextpair;
+    if(pair -> nextpair != NULL)
+        pair -> nextpair -> prevpair = pair -> prevpair;
+    
+    free_pair(pair);
+    return CFG_ERR_NONE;
+}
+
+CFG_ERRNO ini_toString(struct ini* iptr, char** r_buf, unsigned int initsize)
+{
+    if(iptr == NULL || r_buf == NULL)
+        return CFG_ERR_NULLPTR;
+
+    unsigned int nwrite = 0;
+    unsigned int this_initsize = initsize > 0 ? initsize : 65536;  //64K
+    char* memline = (char*) malloc(INI_LIMIT_LINE);
+    char* memstring = (char*) calloc(this_initsize, 1);
+
+    if(memline == NULL)
+        return CFG_ERR_OOM;
+    if(memstring == NULL)
+    {
+        free(memline);
+        return CFG_ERR_OOM;
+    }
+
+    CFG_ERRNO err;
+    struct ini_kv kv;
+    struct ini_sect* sect = NULL;
+
+    if((err = ini_beginSects(iptr)))
+        goto free_all;
+
+    while(ini_nextSect(iptr, &sect, NULL))
+    {
+        memset(memline, 0, INI_LIMIT_LINE);
+        snprintf(memline, INI_LIMIT_LINE - 1, "[%s]\n", sect -> name);
+        if((err = write_line(&memstring, memline, &nwrite, &this_initsize)))
+            goto free_all;
+
+        if((err = ini_beginPairs(sect)))
+            goto free_all;
+
+        while(ini_nextPair(sect, &kv))
+        {
+            memset(memline, 0, INI_LIMIT_LINE);
+            snprintf(memline, INI_LIMIT_LINE - 1, "%s = %s\n", kv.key, kv.val);
+            if((err = write_line(&memstring, memline, &nwrite, &this_initsize)))
+                goto free_all;
+        }
+
+        if((err = write_line(&memstring, "\n", &nwrite, &this_initsize)))
+            goto free_all;
+    }
+
+    free(memline);
+    *r_buf = memstring;
+    return CFG_ERR_NONE;
+
+free_all:
+    free(memline);
+    free(memstring);
+    return err;
+}
