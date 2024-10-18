@@ -273,7 +273,7 @@ static CFG_ERRNO handle_pair(struct ini* iptr)
     if(pairptr == NULL) goto err_oom_pair;              //内存分配失败
     pairptr -> key = mem_key;
     pairptr -> val = mem_val;
-    put_pair(iptr -> sections -> prevsect, pairptr);
+    put_pair(iptr -> sectcurrent, pairptr);
     return CFG_ERR_NONE;
 
 err_oom_val:
@@ -385,6 +385,7 @@ static CFG_ERRNO handle_sect(struct ini* iptr)
     
     /* 添加section */
     put_sect(iptr, sectptr);
+    iptr -> sectcurrent = sectptr;
     return CFG_ERR_NONE;
 
 err_oom_sect:
@@ -643,7 +644,7 @@ CFG_ERRNO ini_end(struct ini* iptr)
         current = next;
     }
 
-    free(iptr -> bitmap); 
+    if(iptr -> bitmap != NULL) free(iptr -> bitmap); 
     memset(iptr, 0, sizeof(struct ini));
     return CFG_ERR_NONE;
 }
@@ -808,6 +809,8 @@ found_sect:
     if(sect -> nextsect != NULL)
         sect -> nextsect -> prevsect = sect -> prevsect;
 
+    if(sect == iptr -> sectcurrent)
+        iptr -> sectcurrent = NULL;
     free_sect(sect);
     return CFG_ERR_NONE;
 }

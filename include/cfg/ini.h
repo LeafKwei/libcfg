@@ -49,6 +49,7 @@ typedef struct ini
     struct ini_sect* cursor;           //迭代时的sect指针
     struct ini_sect* sections;         //sect列表头指针
     struct ini_sect* sectcache;        //针对getValue函数的sect缓存
+    struct ini_sect* sectcurrent;      //ini_parse当前使用的sect
     int index;                         //缓冲区中有效文本的长度，同时也是下一个字符的存放位置
     char linebuffer[INI_LIMIT_LINE];   //文本行缓冲区
     int mapsize;                       //bit位图大小
